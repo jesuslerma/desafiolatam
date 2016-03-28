@@ -77,12 +77,26 @@ $ rails s
 #Gemfile
 gem 'pg'
 ```
-#modificar database.yml
+# modificar database.yml
+```ruby
+#config/database.yml
+development:
+  adapter: postgresql
+  encoding: utf8
+  database: form_development
+  pool: 5
+  host: localhost
+  username: desafio
+  password: latam
+
+```
+# Generar modelo de usuarios
 ```bash
 $ rails g model user name:string age:integer email:string
 $ rails c #va a mostrar un error
 $ rake db:migrate
 $ rails c
+#generar varios modelos
 ```
 #crear usuarios desde consola
 ```ruby
