@@ -1,12 +1,16 @@
 # Acuerdos
-1. Las lineas que inician con $ se deben de ejecutar en terminal
-2. Para indicar la ruta del archivo que se va a modificar se escribe un hashtag previo y el path es partiendo el root del proyecto. Por ejemplo: #app/models/user.rb hace.
-3. Para indicar codigo en sql se pone al inicio de la linea psql>
-4. Para indicar codigo en rails c se pone el comentario ejecutamos rails c
-5. Yo voy a estar trabajando siempre con la misma base de datos form_development para conectarme a ella uso el siguiente comando psql -h localhost form_development  desafio  -W. Pueden utilizar ustedes la misma o crear una nueva previamente a cada ejercicio. Siempre vamos a conectarnos a psql.
+1. Las lineas que empiezan con $ se deben de ejecutar en terminal
+2. Para indicar la ruta del archivo que se va a modificar se escribe un hashtag previo y el path es partiendo el root del proyecto. Por ejemplo: #app/models/user.rb
+3. Para indicar codigo en sql se pone al inicio de la linea sql>
+4. Para indicar codigo en rails console se pone el comentario ejecutamos rails c
+5. Yo voy a estar trabajando siempre con la misma base de datos form_development para conectarme a ella uso el siguiente comando
+```bash
+$ psql -h localhost form_development  desafio  -W.
+```
+Pueden utilizar la misma bd o crear una nueva previamente a cada ejercicio. Siempre vamos a conectarnos a psql.
 
 El contenido mostrado a continuación es de ayuda para el material didáctico de desafio latam 2016. Este archivo hace referencia a la clase
-46 referente a Logica de negocio
+46: Logica de negocio
 
 # Ejercicio 1 Lógica de negocios
 En terminal corremos lo siguiente:
@@ -14,20 +18,20 @@ En terminal corremos lo siguiente:
 $ rails new zoo
 $ cd zoo
 $ rails g model animal_type name:string
-$ rails g model animal name:string animal_type:integer:index
+$ rails g model animal name:string animal_type_id:integer:index
 $ rake db:migrate
 ```
 ### Taller en clases:
-Para prácticando creamos un proyecto nuevo con la configuracion que tenemos configurada por defecto en database.yml. Las instrucciones de este ejercicio vienen en la presentacion 46_logica_de_negocios en la pagina 23.
+Para ir prácticando creamos un proyecto nuevo con la configuracion que tenemos configurada por defecto en database.yml. Las instrucciones de este ejercicio vienen en la presentacion 46_logica_de_negocios en la pagina 23.
 ```ruby
 #app/models/animal_type.rb
 ...
-belongs_to :animal
+has_many :animals
 validates :name, presence: true
 ...
 #app/models/animal.rb
 ...
-has_one :animal_type
+belongs_to :animal_type
 ...
 #ejecutamos rails c
 animal_type = AnimalType.new name:"chango"
@@ -45,7 +49,7 @@ $ cd blog_demo
 $ rails g model post title:string
 $ rails g model user name:string
 $ rails g migration AddUserIdToPost user_id:integer:index
-$ rails g model comments content:text user_id:integer:index post_id:integer:index
+$ rails g model comment content:text user_id:integer:index post_id:integer:index
 $ rake db:migrate
 ```
 
@@ -53,24 +57,25 @@ $ rake db:migrate
 #app/models/post.rb
 ...
 belongs_to :user
+has_many :comments
 validates :user_id, presence: true
-before_validation(on: :create) do
+before_validation do
   default_user = User.first
-  self.user_id = default_user.id
-end
-
-before_destroy do
-  default_user = User.first
-  Post.where(user_id: self.user_id).update_all(default_user.id)
+  self.user_id = default_user.id if self.user_id.blank?
 end
 ...
 #app/models/user.rb
 ...
 has_many :posts
 has_many :comments
+before_destroy do
+  default_user = User.first
+  Post.where(user_id:id).update_all(user_id: default_user.id)
+end
 #app/models/comment.rb
 ...
 belongs_to :user
+belongs_to :post
 validates :user_id, presence: true
 ...
 ```
@@ -93,8 +98,8 @@ validate :post_has_valid_date?
 
 private
 def post_has_valid_date?
-  limit_day = DateTime - 5.days
-  if self.created_at < limit_day
+  limit_day = DateTime.now - 5.days
+  if self.post.created_at < limit_day
     #explain diference btwn base and created_at symbols
     #errors.add(:base, "You can't add comments to posts with 5 or more days of created age")
     errors.add(:created_at, "You can't add comments to posts with 5 or more days of creation date")
@@ -110,9 +115,9 @@ Ahora regresamos al proyecto zoo que creamos en el ejercicio anterior.
 def self.monkeys
   joins(:animal_type).where("animal_type.name = 'chango'")
 end
-scope :monkeys, joins(:animal_type).where("animal_type.name = 'chango'")
-scope :monkeys, lambda {joins(:animal_type).where("animal_type.name = 'chango'")}
-scope :monkeys, -> {joins(:animal_type).where("animal_type.name = 'chango'")}
+scope :monkeys, joins(:animal_type).where("animal_types.name = 'chango'")
+scope :monkeys, lambda {joins(:animal_type).where("animal_types.name = 'chango'")}
+scope :monkeys, -> {joins(:animal_type).where("animal_types.name = 'chango'")}
 
 scope :last_five, last(5)
 scope :last_five, lambda {last(5)}
